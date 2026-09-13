@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0b0e0c" />
+    <meta
+      name="description"
+      content="Experimento de Data Science que compara 668 neurônios reais do FlyWire com uma política aleatória."
+    />
+    <meta property="og:title" content="MOSCA.LAB | 668 neurônios contra o acaso" />
+    <meta property="og:description" content="Um experimento jogável de Data Science com um subconjunto real do conectoma da Drosophila." />
+    <meta property="og:image" content="assets/flywire-neural-arena.png" />
+    <meta property="og:type" content="website" />
+    <title>MOSCA.LAB | 668 neurônios contra o acaso</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#arena" aria-label="MOSCA.LAB, início">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span>MOSCA.LAB</span>
+        </a>
+        <div class="session-status" aria-live="polite">
+          <span class="status-light" id="statusLight"></span>
+          <span id="sessionStatus">Simulação pausada</span>
+        </div>
+        <button class="icon-button" id="helpButton" type="button" aria-label="Abrir instruções">?</button>
+      </header>
+
+      <section class="intro" aria-labelledby="pageTitle">
+        <div>
+          <p class="eyebrow">EXPERIMENTO COMPUTACIONAL</p>
+          <h1 id="pageTitle"><em>668 neurônios reais.</em><br />Uma corrida contra o acaso.</h1>
+        </div>
+        <p class="intro-copy">
+          Compare um circuito FlyWire com uma política aleatória e exporte cada decisão como dados.
+        </p>
+      </section>
+
+      <section class="lab-grid" id="arena" aria-label="Laboratório interativo">
+        <article class="arena-panel panel">
+          <div class="panel-heading">
+            <div>
+              <span class="panel-index">A</span>
+              <h2>Arena</h2>
+            </div>
+            <div class="metric-row" aria-label="Métricas da partida">
+              <div><span>FRUTAS</span><strong id="scoreValue">0</strong></div>
+              <div><span>TEMPO</span><strong id="timeValue">00:00</strong></div>
+            </div>
+          </div>
+          <div class="canvas-wrap">
+            <canvas id="gameCanvas" width="960" height="600" aria-label="Arena onde a mosca procura frutas"></canvas>
+            <div class="arena-message" id="arenaMessage">
+              <strong>Pronta para explorar</strong>
+              <span>Inicie a simulação e acompanhe as decisões da rede.</span>
+            </div>
+          </div>
+          <div class="legend" aria-label="Legenda da arena">
+            <span><i class="legend-fly"></i>Mosca</span>
+            <span><i class="legend-fruit"></i>Fruta</span>
+            <span><i class="legend-danger"></i>Perigo</span>
+            <span><i class="legend-sensor"></i>Campo sensorial</span>
+          </div>
+        </article>
+
+        <aside class="control-column">
+          <article class="brain-panel panel">
+            <div class="panel-heading compact">
+              <div>
+                <span class="panel-index">B</span>
+                <h2>Atividade neural</h2>
+              </div>
+              <span class="spike-rate"><strong id="spikeRate">0</strong> Hz</span>
+            </div>
+            <canvas id="brainCanvas" width="520" height="330" aria-label="Visualização da rede neural"></canvas>
+            <div class="brain-labels" aria-hidden="true">
+              <span>LC4 / LPLC2</span><span>REDE FAFB</span><span>DESCENDENTES</span>
+            </div>
+            <a class="dataset-source" href="https://doi.org/10.1038/s41586-024-07558-y" target="_blank" rel="noreferrer">
+              <span class="status-light live"></span>
+              <strong id="datasetStatus">Carregando FlyWire FAFB v783</strong>
+              <small id="datasetStats">...</small>
+            </a>
+          </article>
+
+          <article class="controls-panel panel">
+            <div class="panel-heading compact">
+              <div>
+                <span class="panel-index">C</span>
+                <h2>Protocolo</h2>
+              </div>
+            </div>
+
+            <div class="primary-actions">
+              <button class="primary-button" id="toggleButton" type="button">
+                <span class="play-icon" aria-hidden="true"></span>
+                <span id="toggleLabel">Iniciar</span>
+              </button>
+              <button class="secondary-button" id="resetButton" type="button">Reiniciar</button>
+            </div>
+
+            <fieldset class="mode-control">
+              <legend>Controlador do experimento</legend>
+              <div class="mode-options">
+                <label>
+                  <input type="radio" name="controllerMode" value="connectome" checked />
+                  <span>Conectoma</span>
+                </label>
+                <label>
+                  <input type="radio" name="controllerMode" value="random" />
+                  <span>Baseline aleatório</span>
+                </label>
+              </div>
+            </fieldset>
+
+            <div class="control-group">
+              <div class="control-label">
+                <label for="speedControl">Velocidade da simulação</label>
+                <output id="speedOutput" for="speedControl">1,0x</output>
+              </div>
+              <input id="speedControl" type="range" min="0.5" max="3" value="1" step="0.5" />
+            </div>
+
+            <div class="control-group toggle-row">
+              <div>
+                <span class="toggle-title">Plasticidade sináptica</span>
+                <small>Reforça decisões após encontrar fruta</small>
+              </div>
+              <label class="switch">
+                <input id="learningToggle" type="checkbox" checked />
+                <span aria-hidden="true"></span>
+                <span class="sr-only">Ativar plasticidade sináptica</span>
+              </label>
+            </div>
+
+            <div class="decision-strip" aria-live="polite">
+              <span>ÚLTIMA DECISÃO</span>
+              <strong id="decisionValue">Aguardando estímulo</strong>
+            </div>
+          </article>
+        </aside>
+      </section>
+
+      <section class="experiment-panel panel" aria-labelledby="experimentTitle">
+        <div class="experiment-question">
+          <p class="section-kicker">EXPERIMENTO A/B</p>
+          <h2 id="experimentTitle">O conectoma supera o acaso?</h2>
+          <p>Execute os dois controladores por 60 segundos e compare eficiência, coleta e colisões.</p>
+        </div>
+        <div class="experiment-metrics" aria-label="Métricas do experimento">
+          <div><span>FRUTAS / MIN</span><strong id="fruitRateValue">0,0</strong><small>taxa de coleta</small></div>
+          <div><span>EFICIÊNCIA</span><strong id="efficiencyValue">0%</strong><small>trajeto útil</small></div>
+          <div><span>COLISÕES</span><strong id="collisionValue">0</strong><small>paredes e riscos</small></div>
+          <div><span>AMOSTRAS</span><strong id="sampleValue">0</strong><small>linhas registradas</small></div>
+        </div>
+        <div class="data-actions">
+          <button class="primary-button" id="exportButton" type="button">Baixar CSV</button>
+          <button class="secondary-button" id="copyPostButton" type="button">Copiar post</button>
+          <span id="copyStatus" aria-live="polite"></span>
+        </div>
+      </section>
+
+      <section class="signal-section" aria-labelledby="signalTitle">
+        <div class="signal-copy">
+          <p class="section-kicker">O QUE ESTÁ ACONTECENDO</p>
+          <h2 id="signalTitle">Do estímulo ao movimento.</h2>
+          <p>
+            Seis canais modelados estimulam <span id="neuronCount">668</span> neurônios reais do FlyWire. Conexões medidas propagam os disparos até populações descendentes.
+          </p>
+        </div>
+        <div class="signal-flow" aria-label="Fluxo da simulação">
+          <div><span>01</span><strong>Perceber</strong><small>visão, odor, perigo</small></div>
+          <i aria-hidden="true"></i>
+          <div><span>02</span><strong>Propagar</strong><small>pulsos e sinapses</small></div>
+          <i aria-hidden="true"></i>
+          <div><span>03</span><strong>Agir</strong><small>virar e avançar</small></div>
+        </div>
+      </section>
+
+      <footer>
+        <p>Criado por Matheus Santos · Data Scientist | Data Analyst</p>
+        <button id="aboutButton" type="button">Sobre o modelo</button>
+      </footer>
+    </main>
+
+    <dialog id="helpDialog">
+      <div class="dialog-head">
+        <span>GUIA DO EXPERIMENTO</span>
+        <button id="closeHelp" class="icon-button" type="button" aria-label="Fechar instruções">×</button>
+      </div>
+      <h2>Como observar a mosca</h2>
+      <p>
+        Clique em <strong>Iniciar</strong>. Os cones à frente da mosca representam sua visão. A linha tracejada aponta para o odor mais forte.
+      </p>
+      <p>
+        Na rede, círculos claros acabaram de disparar. As conexões ficam mais intensas quando recebem sinais. A saída motora mais ativa determina a curva.
+      </p>
+      <p>
+        Com plasticidade ativa, encontrar uma fruta modula levemente as sinapses medidas que participaram da decisão recente. O mapa anatômico original permanece preservado no arquivo de dados.
+      </p>
+      <p>
+        Troque para <strong>Baseline aleatório</strong> para comparar o circuito com um controle simples. Baixe o CSV para analisar a série temporal completa.
+      </p>
+      <button class="primary-button dialog-action" id="understoodButton" type="button">Entendi</button>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>
