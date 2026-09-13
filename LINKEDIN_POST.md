@@ -1,29 +1,30 @@
 # Sugestão de post para LinkedIn
 
-Transformei **668 neurônios reais de uma mosca** em um experimento jogável.
+Coloquei **668 neurônios reais de uma mosca diante do Bitcoin**.
 
-Usei um subconjunto do FlyWire FAFB v783 com **18.968 conexões sinápticas** para controlar uma mosca virtual e responder uma pergunta:
+O MOSCA.QUANT transforma candles públicos de BTC-USD em seis sinais sensoriais, propaga esses sinais por **18.968 conexões do FlyWire** e converte a atividade neural em BUY, HOLD ou SELL.
 
-> O conectoma consegue superar uma política aleatória?
+Tudo acontece no navegador, em paper trading:
 
-Construí uma arena A/B na qual os dois controladores têm 60 segundos para coletar frutas e evitar perigos. O experimento mede:
+- carteira simulada de US$ 10 mil;
+- replay de 180 candles;
+- benchmark de buy & hold;
+- comparação com momentum e política aleatória;
+- métricas de retorno, alpha, Sharpe e drawdown;
+- cada feature e decisão exportável em CSV.
 
-- frutas por minuto;
-- eficiência de trajetória;
-- colisões;
-- atividade neural;
-- sensores e comandos motores a cada 500 ms.
+Também implementei memória experimental: sinais de recompensa podem modular pesos durante a simulação e o estado pode persistir localmente entre rodadas.
 
-Também incluí exportação CSV para analisar a série temporal e uma visualização em tempo real dos disparos sobre o grafo neural.
+O ponto mais importante é a transparência.
 
-O projeto combina **análise de redes, engenharia de dados, simulação LIF, desenho experimental e visualização interativa**.
+A anatomia e as conexões são reais. Os sinais sensoriais, a dinâmica LIF, o decoder de trades e a plasticidade são modelos computacionais.
 
-Um detalhe importante: a anatomia e as conexões são reais; os estímulos, a dinâmica neural e o corpo são modelos computacionais. O objetivo não é afirmar que reconstruí um cérebro vivo, mas explorar de forma transparente o que um conectoma pode fazer quando conectado a um ambiente.
+Isso **não é uma estratégia financeira**, não opera dinheiro real e não prova que uma mosca aprende a negociar. É um experimento sobre análise de redes, séries temporais, benchmarking, risco e explicabilidade.
 
-Código, dados, testes de integridade e metodologia no GitHub:
+Código, dados e metodologia:
 
 **https://github.com/Matheussantos25/mosca-lab-connectome-game**
 
-Qual outro experimento vocês fariam com esse circuito?
+Que outro sistema real vocês colocariam diante desse circuito?
 
-#DataScience #DataAnalytics #Neuroscience #Connectome #JavaScript #OpenScience
+#DataScience #DataAnalytics #Neuroscience #Bitcoin #MachineLearning #OpenScience

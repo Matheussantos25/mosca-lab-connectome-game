@@ -1,212 +1,71 @@
 <!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0b0e0c" />
-    <meta
-      name="description"
-      content="Experimento de Data Science que compara 668 neurônios reais do FlyWire com uma política aleatória."
-    />
-    <meta property="og:title" content="MOSCA.LAB | 668 neurônios contra o acaso" />
-    <meta property="og:description" content="Um experimento jogável de Data Science com um subconjunto real do conectoma da Drosophila." />
-    <meta property="og:image" content="assets/flywire-neural-arena.png" />
-    <meta property="og:type" content="website" />
-    <title>MOSCA.LAB | 668 neurônios contra o acaso</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <main class="app-shell">
-      <header class="topbar">
-        <a class="brand" href="#arena" aria-label="MOSCA.LAB, início">
-          <span class="brand-mark" aria-hidden="true"></span>
-          <span>MOSCA.LAB</span>
-        </a>
-        <div class="session-status" aria-live="polite">
-          <span class="status-light" id="statusLight"></span>
-          <span id="sessionStatus">Simulação pausada</span>
-        </div>
-        <button class="icon-button" id="helpButton" type="button" aria-label="Abrir instruções">?</button>
-      </header>
-
-      <section class="intro" aria-labelledby="pageTitle">
-        <div>
-          <p class="eyebrow">EXPERIMENTO COMPUTACIONAL</p>
-          <h1 id="pageTitle"><em>668 neurônios reais.</em><br />Uma corrida contra o acaso.</h1>
-        </div>
-        <p class="intro-copy">
-          Compare um circuito FlyWire com uma política aleatória e exporte cada decisão como dados.
-        </p>
-      </section>
-
-      <section class="lab-grid" id="arena" aria-label="Laboratório interativo">
-        <article class="arena-panel panel">
-          <div class="panel-heading">
-            <div>
-              <span class="panel-index">A</span>
-              <h2>Arena</h2>
-            </div>
-            <div class="metric-row" aria-label="Métricas da partida">
-              <div><span>FRUTAS</span><strong id="scoreValue">0</strong></div>
-              <div><span>TEMPO</span><strong id="timeValue">00:00</strong></div>
-            </div>
-          </div>
-          <div class="canvas-wrap">
-            <canvas id="gameCanvas" width="960" height="600" aria-label="Arena onde a mosca procura frutas"></canvas>
-            <div class="arena-message" id="arenaMessage">
-              <strong>Pronta para explorar</strong>
-              <span>Inicie a simulação e acompanhe as decisões da rede.</span>
-            </div>
-          </div>
-          <div class="legend" aria-label="Legenda da arena">
-            <span><i class="legend-fly"></i>Mosca</span>
-            <span><i class="legend-fruit"></i>Fruta</span>
-            <span><i class="legend-danger"></i>Perigo</span>
-            <span><i class="legend-sensor"></i>Campo sensorial</span>
-          </div>
-        </article>
-
-        <aside class="control-column">
-          <article class="brain-panel panel">
-            <div class="panel-heading compact">
-              <div>
-                <span class="panel-index">B</span>
-                <h2>Atividade neural</h2>
-              </div>
-              <span class="spike-rate"><strong id="spikeRate">0</strong> Hz</span>
-            </div>
-            <canvas id="brainCanvas" width="520" height="330" aria-label="Visualização da rede neural"></canvas>
-            <div class="brain-labels" aria-hidden="true">
-              <span>LC4 / LPLC2</span><span>REDE FAFB</span><span>DESCENDENTES</span>
-            </div>
-            <a class="dataset-source" href="https://doi.org/10.1038/s41586-024-07558-y" target="_blank" rel="noreferrer">
-              <span class="status-light live"></span>
-              <strong id="datasetStatus">Carregando FlyWire FAFB v783</strong>
-              <small id="datasetStats">...</small>
-            </a>
-          </article>
-
-          <article class="controls-panel panel">
-            <div class="panel-heading compact">
-              <div>
-                <span class="panel-index">C</span>
-                <h2>Protocolo</h2>
-              </div>
-            </div>
-
-            <div class="primary-actions">
-              <button class="primary-button" id="toggleButton" type="button">
-                <span class="play-icon" aria-hidden="true"></span>
-                <span id="toggleLabel">Iniciar</span>
-              </button>
-              <button class="secondary-button" id="resetButton" type="button">Reiniciar</button>
-            </div>
-
-            <fieldset class="mode-control">
-              <legend>Controlador do experimento</legend>
-              <div class="mode-options">
-                <label>
-                  <input type="radio" name="controllerMode" value="connectome" checked />
-                  <span>Conectoma</span>
-                </label>
-                <label>
-                  <input type="radio" name="controllerMode" value="random" />
-                  <span>Baseline aleatório</span>
-                </label>
-              </div>
-            </fieldset>
-
-            <div class="control-group">
-              <div class="control-label">
-                <label for="speedControl">Velocidade da simulação</label>
-                <output id="speedOutput" for="speedControl">1,0x</output>
-              </div>
-              <input id="speedControl" type="range" min="0.5" max="3" value="1" step="0.5" />
-            </div>
-
-            <div class="control-group toggle-row">
-              <div>
-                <span class="toggle-title">Plasticidade sináptica</span>
-                <small>Reforça decisões após encontrar fruta</small>
-              </div>
-              <label class="switch">
-                <input id="learningToggle" type="checkbox" checked />
-                <span aria-hidden="true"></span>
-                <span class="sr-only">Ativar plasticidade sináptica</span>
-              </label>
-            </div>
-
-            <div class="decision-strip" aria-live="polite">
-              <span>ÚLTIMA DECISÃO</span>
-              <strong id="decisionValue">Aguardando estímulo</strong>
-            </div>
-          </article>
-        </aside>
-      </section>
-
-      <section class="experiment-panel panel" aria-labelledby="experimentTitle">
-        <div class="experiment-question">
-          <p class="section-kicker">EXPERIMENTO A/B</p>
-          <h2 id="experimentTitle">O conectoma supera o acaso?</h2>
-          <p>Execute os dois controladores por 60 segundos e compare eficiência, coleta e colisões.</p>
-        </div>
-        <div class="experiment-metrics" aria-label="Métricas do experimento">
-          <div><span>FRUTAS / MIN</span><strong id="fruitRateValue">0,0</strong><small>taxa de coleta</small></div>
-          <div><span>EFICIÊNCIA</span><strong id="efficiencyValue">0%</strong><small>trajeto útil</small></div>
-          <div><span>COLISÕES</span><strong id="collisionValue">0</strong><small>paredes e riscos</small></div>
-          <div><span>AMOSTRAS</span><strong id="sampleValue">0</strong><small>linhas registradas</small></div>
-        </div>
-        <div class="data-actions">
-          <button class="primary-button" id="exportButton" type="button">Baixar CSV</button>
-          <button class="secondary-button" id="copyPostButton" type="button">Copiar post</button>
-          <span id="copyStatus" aria-live="polite"></span>
-        </div>
-      </section>
-
-      <section class="signal-section" aria-labelledby="signalTitle">
-        <div class="signal-copy">
-          <p class="section-kicker">O QUE ESTÁ ACONTECENDO</p>
-          <h2 id="signalTitle">Do estímulo ao movimento.</h2>
-          <p>
-            Seis canais modelados estimulam <span id="neuronCount">668</span> neurônios reais do FlyWire. Conexões medidas propagam os disparos até populações descendentes.
-          </p>
-        </div>
-        <div class="signal-flow" aria-label="Fluxo da simulação">
-          <div><span>01</span><strong>Perceber</strong><small>visão, odor, perigo</small></div>
-          <i aria-hidden="true"></i>
-          <div><span>02</span><strong>Propagar</strong><small>pulsos e sinapses</small></div>
-          <i aria-hidden="true"></i>
-          <div><span>03</span><strong>Agir</strong><small>virar e avançar</small></div>
-        </div>
-      </section>
-
-      <footer>
-        <p>Criado por Matheus Santos · Data Scientist | Data Analyst</p>
-        <button id="aboutButton" type="button">Sobre o modelo</button>
-      </footer>
-    </main>
-
-    <dialog id="helpDialog">
-      <div class="dialog-head">
-        <span>GUIA DO EXPERIMENTO</span>
-        <button id="closeHelp" class="icon-button" type="button" aria-label="Fechar instruções">×</button>
-      </div>
-      <h2>Como observar a mosca</h2>
-      <p>
-        Clique em <strong>Iniciar</strong>. Os cones à frente da mosca representam sua visão. A linha tracejada aponta para o odor mais forte.
-      </p>
-      <p>
-        Na rede, círculos claros acabaram de disparar. As conexões ficam mais intensas quando recebem sinais. A saída motora mais ativa determina a curva.
-      </p>
-      <p>
-        Com plasticidade ativa, encontrar uma fruta modula levemente as sinapses medidas que participaram da decisão recente. O mapa anatômico original permanece preservado no arquivo de dados.
-      </p>
-      <p>
-        Troque para <strong>Baseline aleatório</strong> para comparar o circuito com um controle simples. Baixe o CSV para analisar a série temporal completa.
-      </p>
-      <button class="primary-button dialog-action" id="understoodButton" type="button">Entendi</button>
-    </dialog>
-
-    <script src="app.js"></script>
-  </body>
-</html>
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090b0a">
+  <meta name="description" content="Paper trading experimental: 668 neurônios reais do FlyWire diante de dados públicos de BTC-USD.">
+  <meta property="og:title" content="MOSCA.QUANT — um conectoma diante do Bitcoin">
+  <meta property="og:description" content="Conectoma real, candles públicos, carteira simulada e benchmark reproduzível.">
+  <meta property="og:image" content="assets/flywire-neural-arena.png"><meta property="og:type" content="website">
+  <title>MOSCA.QUANT — conectoma × mercado</title><link rel="stylesheet" href="styles.css">
+</head>
+<body><a class="skip-link" href="#terminal">Ir para o experimento</a><main class="shell">
+  <header class="topbar">
+    <a class="brand" href="#terminal" aria-label="MOSCA.QUANT, início"><span class="fly-mark" aria-hidden="true"></span>MOSCA.QUANT</a>
+    <div class="live-status"><i id="statusLight"></i><span id="sessionStatus">Carregando experimento</span></div>
+    <a class="repo-link" href="https://github.com/Matheussantos25/mosca-lab-connectome-game" target="_blank" rel="noreferrer">GitHub ↗</a>
+  </header>
+  <section class="hero" aria-labelledby="pageTitle">
+    <div class="hero-copy"><p class="eyebrow">PAPER MARKET LAB / EXPERIMENTO 01</p><h1 id="pageTitle">Coloquei um conectoma real <em>diante do Bitcoin.</em></h1><p class="hero-text">668 neurônios do FlyWire recebem candles públicos de BTC-USD e propõem <strong>comprar, manter ou vender</strong>. Sem dinheiro real. Com cada decisão auditável.</p></div>
+    <div class="hero-proof" aria-label="Resumo técnico"><span>SUBGRAFO</span><strong>668</strong><small>neurônios reais</small><span>SINAPSES</span><strong>18.968</strong><small>conexões dirigidas</small><span>EXECUÇÃO</span><strong>100%</strong><small>no navegador</small></div>
+  </section>
+  <section class="terminal" id="terminal" aria-label="Terminal de paper trading">
+    <article class="market-panel panel">
+      <header class="panel-head market-head"><div><span class="panel-code">01 / MARKET</span><h2>BTC—USD <b id="marketGranularity">1H REPLAY</b></h2></div><div class="quote"><span id="marketSource">COINBASE PUBLIC</span><strong id="priceValue">—</strong><small id="priceChange">aguardando candles</small></div></header>
+      <div class="chart-wrap"><canvas id="gameCanvas" width="1100" height="620" aria-label="Gráfico de candles BTC-USD com decisões do conectoma"></canvas><div class="chart-grid-labels" aria-hidden="true"><span>PRICE</span><span>NEURAL SIGNAL</span><span>PORTFOLIO</span></div><div class="start-overlay" id="arenaMessage"><span class="overlay-index">EXPERIMENTO PRONTO</span><strong>O cérebro não vê números.</strong><p>Ele recebe seis sinais normalizados de retorno, momentum, volatilidade, volume e drawdown.</p><button class="primary-button" id="heroStartButton" type="button">Executar replay</button></div></div>
+      <footer class="market-foot"><div><span>EXPOSIÇÃO</span><strong id="exposureValue">0%</strong></div><div><span>CAIXA</span><strong id="cashValue">$10.000</strong></div><div><span>POSIÇÃO</span><strong id="positionValue">0,0000 BTC</strong></div><div><span>CANDLE</span><strong id="timeValue">0 / 180</strong></div></footer>
+    </article>
+    <aside class="right-rail">
+      <article class="brain-panel panel"><header class="panel-head compact"><div><span class="panel-code">02 / CONNECTOME</span><h2>Atividade neural</h2></div><strong class="hz"><span id="spikeRate">0</span> Hz</strong></header><canvas id="brainCanvas" width="520" height="310" aria-label="Grafo neural FlyWire em atividade"></canvas><a class="dataset-source" href="https://doi.org/10.1038/s41586-024-07558-y" target="_blank" rel="noreferrer"><i></i><span><strong id="dataset">FlyWire FAFB v783</strong><small id="datasetStats">carregando circuito</small></span><b>DOI ↗</b></a></article>
+      <article class="control-panel panel">
+        <header class="panel-head compact"><div><span class="panel-code">03 / PROTOCOL</span><h2>Controlador</h2></div><span class="memory-badge" id="memoryBadge">MEM 00</span></header>
+        <fieldset class="mode-control"><legend>Estratégia em teste</legend><label><input type="radio" name="controllerMode" value="connectome" checked><span>Conectoma</span></label><label><input type="radio" name="controllerMode" value="momentum"><span>Momentum</span></label><label><input type="radio" name="controllerMode" value="random"><span>Aleatório</span></label></fieldset>
+        <div class="decision-card" aria-live="polite"><span>PROPOSTA ATUAL</span><strong id="decisionValue">HOLD</strong><small id="decisionReason">Aguardando o primeiro candle</small></div>
+        <div class="control-row"><label for="speedControl">Velocidade</label><output id="speedOutput">1x</output><input id="speedControl" type="range" min="0.5" max="4" value="1" step="0.5"></div>
+        <label class="guard-row"><span><strong>Risk guard</strong><small>sem alavancagem · exposição máxima 70%</small></span><input id="learningToggle" type="checkbox" checked><i aria-hidden="true"></i></label>
+        <div class="actions"><button class="primary-button" id="toggleButton" type="button"><span id="toggleLabel">Executar</span></button><button class="secondary-button" id="resetButton" type="button">Reiniciar</button></div>
+      </article>
+    </aside>
+  </section>
+  <section class="scoreboard panel" aria-labelledby="scoreTitle">
+    <div class="score-intro"><span class="panel-code">04 / SCOREBOARD</span><h2 id="scoreTitle">A rede venceu o mercado?</h2><p id="verdictText">Execute os 180 candles para comparar com buy &amp; hold.</p></div>
+    <div class="metric"><span>EQUITY</span><strong id="equityValue">$10.000</strong><small>carteira simulada</small></div>
+    <div class="metric"><span>RETORNO</span><strong id="returnValue">0,00%</strong><small id="alphaValue">α 0,00 p.p.</small></div>
+    <div class="metric"><span>SHARPE</span><strong id="sharpeValue">0,00</strong><small>não anualizado</small></div>
+    <div class="metric"><span>MAX DD</span><strong id="drawdownValue">0,00%</strong><small>queda do pico</small></div>
+    <div class="metric"><span>TRADES</span><strong id="tradeValue">0</strong><small id="hitRateValue">0% positivos</small></div>
+    <div class="score-actions"><button class="secondary-button" id="exportButton" type="button">Exportar CSV</button><button class="text-button" id="copyPostButton" type="button">Copiar resultado ↗</button><span id="copyStatus" aria-live="polite"></span></div>
+  </section>
+  <section class="explain-section" aria-labelledby="explainTitle">
+    <div class="explain-copy"><p class="eyebrow">A CAIXA-PRETA ESTÁ ABERTA</p><h2 id="explainTitle">Do candle ao trade, sem atalhos.</h2><p>O mercado vira seis sinais normalizados. Eles atravessam apenas conexões do recorte FlyWire. Um readout fixo transforma a atividade descendente em ação.</p></div>
+    <div class="pipeline" aria-label="Fluxo do experimento">
+      <div><b>01</b><span>OHLCV público</span><small>Coinbase Exchange</small></div><i></i>
+      <div><b>02</b><span>Features</span><small>retorno · risco · volume</small></div><i></i>
+      <div><b>03</b><span>668 neurônios</span><small>rede LIF aproximada</small></div><i></i>
+      <div><b>04</b><span>BUY / HOLD / SELL</span><small>paper trading auditável</small></div>
+    </div>
+    <div class="feature-tape" id="featureTape"><span>RET +0.000</span><span>MOM +0.000</span><span>VOL 0.000</span><span>VOLUME 0.000</span><span>DD 0.000</span><span>RANGE 0.000</span></div>
+  </section>
+  <section class="method-note"><strong>O que este projeto afirma</strong><p>É um experimento entre conectividade biológica e uma série temporal. Não é recomendação financeira, não envia ordens e não demonstra aprendizado lucrativo. Anatomia e conexões são reais; dinâmica, estímulos e leitura motora são modelos.</p><button class="text-button" id="aboutButton" type="button">Ler protocolo completo</button></section>
+  <footer class="footer"><span>MATHEUS SANTOS</span><span>DATA SCIENTIST / DATA ANALYST</span><span>MIT CODE · CC BY-NC 4.0 DATA</span></footer>
+</main>
+<dialog id="helpDialog">
+  <div class="dialog-head"><span>PROTOCOLO / v2.0</span><button id="closeHelp" type="button" aria-label="Fechar">×</button></div>
+  <h2>Uma mosca não entende Bitcoin.</h2>
+  <p>O experimento converte cada candle em seis sinais normalizados. O circuito LIF os propaga e um readout fixo gera BUY, HOLD ou SELL.</p>
+  <p>A carteira começa com US$ 10 mil fictícios. O guard impede alavancagem e limita a exposição. O benchmark usa buy &amp; hold com o mesmo limite.</p>
+  <p>O resultado é exploratório. Compare controladores, exporte o CSV e procure vieses, overfitting e sorte.</p>
+  <button class="primary-button" id="understoodButton" type="button">Entendi o experimento</button>
+</dialog>
+<script src="app.js"></script>
+</body></html>
