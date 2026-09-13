@@ -22,7 +22,7 @@ Um detalhe importante: a anatomia e as conexões são reais; os estímulos, a di
 
 Código, dados, testes de integridade e metodologia no GitHub:
 
-**[INSERIR URL DO REPOSITÓRIO]**
+**https://github.com/Matheussantos25/mosca-lab-connectome-game**
 
 Qual outro experimento vocês fariam com esse circuito?
 
