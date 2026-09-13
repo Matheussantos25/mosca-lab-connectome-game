@@ -41,6 +41,20 @@ Não há dinheiro real, conta conectada ou execução de ordens. A carteira é s
 - Exportar candles, features, decisões e métricas para CSV.
 - Manter plasticidade experimental entre sessões no localStorage.
 - Copiar o resultado já formatado para LinkedIn.
+- Gerar um vídeo vertical **4:5, 1080 × 1350, 30 FPS e 15 segundos** com a mosca operando, decisões, atividade neural e resultado.
+
+## Vídeo para LinkedIn
+
+Clique em **Gerar vídeo 4:5** no scoreboard. O estúdio abre uma prévia e, ao clicar em **Gravar e baixar vídeo**, executa um replay novo com o controlador Conectoma e baixa `mosca-quant-linkedin-AAAA-MM-DD.webm`.
+
+O roteiro é automático:
+
+1. gancho com os 668 neurônios reais;
+2. candles, conectoma e mosca operando o terminal;
+3. resultado contra buy & hold;
+4. chamada para o código e aviso de paper trading.
+
+A gravação usa `canvas.captureStream()` e `MediaRecorder`. Ela acontece localmente no Chrome ou Edge, sem upload e sem dependências externas.
 
 ## Dados reais
 

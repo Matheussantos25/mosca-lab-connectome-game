@@ -1,7 +1,8 @@
 "use strict";
 const $=s=>document.querySelector(s),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const chart=$("#gameCanvas"),cx=chart.getContext("2d"),brainCanvas=$("#brainCanvas"),bx=brainCanvas.getContext("2d");
-const ui={toggle:$("#toggleButton"),toggleLabel:$("#toggleLabel"),heroStart:$("#heroStartButton"),reset:$("#resetButton"),speed:$("#speedControl"),speedOut:$("#speedOutput"),guard:$("#learningToggle"),overlay:$("#arenaMessage"),status:$("#sessionStatus"),light:$("#statusLight"),price:$("#priceValue"),change:$("#priceChange"),source:$("#marketSource"),time:$("#timeValue"),exposure:$("#exposureValue"),cash:$("#cashValue"),position:$("#positionValue"),decision:$("#decisionValue"),reason:$("#decisionReason"),rate:$("#spikeRate"),datasetStats:$("#datasetStats"),memory:$("#memoryBadge"),equity:$("#equityValue"),return:$("#returnValue"),alpha:$("#alphaValue"),sharpe:$("#sharpeValue"),drawdown:$("#drawdownValue"),trades:$("#tradeValue"),hitRate:$("#hitRateValue"),verdict:$("#verdictText"),features:$("#featureTape"),export:$("#exportButton"),copy:$("#copyPostButton"),copyStatus:$("#copyStatus"),dialog:$("#helpDialog")};
+const socialCanvas=$("#socialCanvas"),sx=socialCanvas.getContext("2d");
+const ui={toggle:$("#toggleButton"),toggleLabel:$("#toggleLabel"),heroStart:$("#heroStartButton"),reset:$("#resetButton"),speed:$("#speedControl"),speedOut:$("#speedOutput"),guard:$("#learningToggle"),overlay:$("#arenaMessage"),status:$("#sessionStatus"),light:$("#statusLight"),price:$("#priceValue"),change:$("#priceChange"),source:$("#marketSource"),time:$("#timeValue"),exposure:$("#exposureValue"),cash:$("#cashValue"),position:$("#positionValue"),decision:$("#decisionValue"),reason:$("#decisionReason"),rate:$("#spikeRate"),datasetStats:$("#datasetStats"),memory:$("#memoryBadge"),equity:$("#equityValue"),return:$("#returnValue"),alpha:$("#alphaValue"),sharpe:$("#sharpeValue"),drawdown:$("#drawdownValue"),trades:$("#tradeValue"),hitRate:$("#hitRateValue"),verdict:$("#verdictText"),features:$("#featureTape"),export:$("#exportButton"),copy:$("#copyPostButton"),copyStatus:$("#copyStatus"),dialog:$("#helpDialog"),video:$("#videoButton"),videoDialog:$("#videoDialog"),recordVideo:$("#recordVideoButton"),videoStatus:$("#videoStatus"),closeVideo:$("#closeVideo")};
 const fmtUSD=v=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"USD",maximumFractionDigits:v>1000?0:2}).format(v);
 const fmtPct=v=>`${v>=0?"+":""}${v.toFixed(2).replace(".",",")}%`;
 let recentSpikes=0,displayedRate=0;
@@ -37,6 +38,7 @@ let brain=null,positions=[],brainBackdrop=null,candles=[],dataSource="COINBASE P
 let running=false,speed=1,mode="connectome",cursor=30,endIndex=0,lastStep=0,lastRate=0;
 let cash=10000,qty=0,avgCost=0,peak=10000,maxDD=0,initialPrice=0,lastEquity=10000,tradeCooldown=0;
 let trades=[],telemetry=[],equityCurve=[],benchmarkCurve=[],returns=[],lastDecision="HOLD",lastFeatures={};
+let socialPreviewStart=performance.now(),videoRecording=false;
 
 function fallbackCandles(){
   let seed=783,price=68240;const out=[];
@@ -143,7 +145,7 @@ function frame(now){
   if(running&&now-lastStep>620/speed){lastStep=now;advance()}
   if(now-lastRate>500){displayedRate=recentSpikes*2;recentSpikes=0;lastRate=now;ui.rate.textContent=displayedRate}
   if(brain&&!running)brain.activity.forEach((v,i)=>brain.activity[i]=v*.96);
-  drawBrain();requestAnimationFrame(frame);
+  drawBrain();if(ui.videoDialog.open&&!videoRecording)drawSocialFrame(.38,now-socialPreviewStart);requestAnimationFrame(frame);
 }
 
 function exportCSV(){
@@ -159,10 +161,102 @@ async function copyResult(){
 function calculateSnapshot(){
   const equity=equityCurve.at(-1)||10000,bench=benchmarkCurve.at(-1)||10000,ret=(equity/10000-1)*100,alpha=(equity-bench)/100,s=stats(returns),sharpe=s.sd?s.mean/s.sd*Math.sqrt(Math.min(returns.length,180)):0;return{ret,alpha,sharpe};
 }
+
+function socialPanel(x,y,w,h,label){
+  sx.fillStyle="rgba(16,20,17,.96)";sx.strokeStyle="#293129";sx.lineWidth=2;sx.beginPath();sx.roundRect(x,y,w,h,14);sx.fill();sx.stroke();
+  sx.fillStyle="#8f9b91";sx.font='600 18px "Cascadia Mono",monospace';sx.letterSpacing="2px";sx.fillText(label,x+24,y+35);sx.letterSpacing="0px";
+}
+function drawSocialFly(x,y,t){
+  const flap=Math.sin(t*.018)*.28,hand=Math.sin(t*.024)*9;sx.save();sx.translate(x,y);
+  sx.fillStyle="rgba(120,174,179,.16)";sx.strokeStyle="#78aeb3";sx.lineWidth=4;
+  sx.save();sx.translate(-38,-40);sx.rotate(-.55+flap);sx.beginPath();sx.ellipse(-42,-30,64,27,-.2,0,Math.PI*2);sx.fill();sx.stroke();sx.restore();
+  sx.save();sx.translate(38,-40);sx.rotate(.55-flap);sx.beginPath();sx.ellipse(42,-30,64,27,.2,0,Math.PI*2);sx.fill();sx.stroke();sx.restore();
+  sx.strokeStyle="#59665c";sx.lineWidth=7;sx.lineCap="round";[[-45,30,-95,78],[-22,55,-58,115],[42,35,83,82]].forEach(a=>{sx.beginPath();sx.moveTo(a[0],a[1]);sx.lineTo(a[2],a[3]);sx.stroke()});
+  sx.beginPath();sx.moveTo(35,48);sx.lineTo(80+hand,104);sx.stroke();
+  sx.fillStyle="#b7e36b";sx.shadowColor="rgba(183,227,107,.45)";sx.shadowBlur=26;sx.beginPath();sx.ellipse(0,14,62,86,0,0,Math.PI*2);sx.fill();sx.shadowBlur=0;
+  sx.fillStyle="#202720";sx.beginPath();sx.ellipse(0,40,49,63,0,0,Math.PI*2);sx.fill();
+  sx.fillStyle="#171b18";sx.beginPath();sx.arc(0,-60,54,0,Math.PI*2);sx.fill();sx.fillStyle="#e57e70";
+  sx.beginPath();sx.arc(-25,-68,20,0,Math.PI*2);sx.arc(25,-68,20,0,Math.PI*2);sx.fill();
+  sx.fillStyle="#101310";sx.beginPath();sx.arc(-25,-68,7,0,Math.PI*2);sx.arc(25,-68,7,0,Math.PI*2);sx.fill();
+  sx.strokeStyle="#8f9b91";sx.lineWidth=4;sx.beginPath();sx.moveTo(-20,-103);sx.quadraticCurveTo(-42,-135,-57,-126);sx.moveTo(20,-103);sx.quadraticCurveTo(42,-135,57,-126);sx.stroke();
+  sx.restore();
+}
+function drawSocialMarket(x,y,w,h){
+  if(!candles.length)return;const right=Math.max(endIndex-180,Math.min(cursor-1,endIndex-1)),left=Math.max(0,right-45),view=candles.slice(left,right+1);
+  const lo=Math.min(...view.map(c=>c.low)),hi=Math.max(...view.map(c=>c.high)),pad=(hi-lo)*.12||1,yOf=p=>y+55+(hi+pad-p)/(hi-lo+pad*2)*(h-95),step=(w-52)/46;
+  sx.strokeStyle="rgba(143,155,145,.12)";sx.lineWidth=1;for(let gy=y+60;gy<y+h-25;gy+=65){sx.beginPath();sx.moveTo(x+24,gy);sx.lineTo(x+w-24,gy);sx.stroke()}
+  view.forEach((c,i)=>{const px=x+28+i*step,up=c.close>=c.open,color=up?"#b7e36b":"#e57e70";sx.strokeStyle=color;sx.fillStyle=color;sx.lineWidth=2;sx.beginPath();sx.moveTo(px,yOf(c.high));sx.lineTo(px,yOf(c.low));sx.stroke();sx.globalAlpha=.82;sx.fillRect(px-4,Math.min(yOf(c.open),yOf(c.close)),8,Math.max(3,Math.abs(yOf(c.open)-yOf(c.close))));sx.globalAlpha=1});
+  for(const trade of trades.filter(t=>t.index>=left&&t.index<=right)){const px=x+28+(trade.index-left)*step,py=yOf(trade.price);sx.fillStyle=trade.action==="BUY"?"#b7e36b":"#e57e70";sx.beginPath();sx.arc(px,py,8,0,Math.PI*2);sx.fill()}
+}
+function drawSocialBrain(x,y,w,h){
+  if(!brain)return;sx.save();sx.beginPath();sx.rect(x,y,w,h);sx.clip();sx.lineWidth=.7;
+  for(let i=0;i<brain.edges.length;i+=73){const [from,to,syn]=brain.edges[i],a=positions[from],b=positions[to];sx.strokeStyle=syn>=0?"rgba(183,227,107,.13)":"rgba(229,126,112,.1)";sx.beginPath();sx.moveTo(x+a.x/520*w,y+a.y/310*h);sx.lineTo(x+b.x/520*w,y+b.y/310*h);sx.stroke()}
+  for(let i=0;i<positions.length;i+=2){const p=positions[i],activity=brain.activity[i];sx.fillStyle=activity>.35?"#d8ff97":"#566359";sx.shadowColor="#b7e36b";sx.shadowBlur=activity*18;sx.beginPath();sx.arc(x+p.x/520*w,y+p.y/310*h,activity>.35?4:2,0,Math.PI*2);sx.fill();sx.shadowBlur=0}
+  sx.restore();
+}
+function drawSocialFrame(progress=.38,now=performance.now()){
+  const p=clamp(progress,0,1),m=calculateSnapshot(),current=candles[Math.max(0,Math.min(cursor-1,endIndex-1))],price=current?.close||initialPrice||0;
+  sx.clearRect(0,0,1080,1350);sx.fillStyle="#090b0a";sx.fillRect(0,0,1080,1350);
+  const glow=sx.createRadialGradient(830,160,10,830,160,560);glow.addColorStop(0,"rgba(183,227,107,.12)");glow.addColorStop(1,"rgba(183,227,107,0)");sx.fillStyle=glow;sx.fillRect(0,0,1080,700);
+  sx.strokeStyle="rgba(238,244,239,.035)";sx.lineWidth=1;for(let x=0;x<1080;x+=54){sx.beginPath();sx.moveTo(x,0);sx.lineTo(x,1350);sx.stroke()}for(let y=0;y<1350;y+=54){sx.beginPath();sx.moveTo(0,y);sx.lineTo(1080,y);sx.stroke()}
+  sx.fillStyle="#b7e36b";sx.font='700 21px "Cascadia Mono",monospace';sx.fillText("MOSCA.QUANT",60,66);sx.fillStyle="#8f9b91";sx.font='500 16px "Cascadia Mono",monospace';sx.textAlign="right";sx.fillText("FLYWIRE × BTC–USD / PAPER LAB",1020,66);sx.textAlign="left";
+  sx.fillStyle="#eef4ef";sx.font='600 62px "Segoe UI Variable",sans-serif';sx.fillText("UM CONECTOMA REAL",60,150);sx.fillStyle="#b7e36b";sx.fillText("DIANTE DO BITCOIN.",60,215);
+  sx.fillStyle="#8f9b91";sx.font='400 23px "Segoe UI Variable",sans-serif';sx.fillText("668 neurônios  ·  18.968 conexões  ·  cada decisão auditável",62,259);
+  socialPanel(60,300,960,390,"01 / MERCADO — BTC–USD 1H");
+  sx.fillStyle="#eef4ef";sx.font='500 28px "Cascadia Mono",monospace';sx.textAlign="right";sx.fillText(fmtUSD(price),992,342);sx.textAlign="left";drawSocialMarket(60,300,960,390);
+  socialPanel(60,720,530,330,"02 / ATIVIDADE NEURAL");drawSocialBrain(84,776,482,236);
+  sx.fillStyle="#8f9b91";sx.font='500 15px "Cascadia Mono",monospace';sx.fillText(`${displayedRate} Hz / FAFB v783`,84,1026);
+  socialPanel(620,720,400,330,"03 / OPERADOR");
+  sx.fillStyle="#0b0e0c";sx.strokeStyle="#465248";sx.lineWidth=3;sx.beginPath();sx.roundRect(651,778,190,116,8);sx.fill();sx.stroke();
+  sx.strokeStyle="#293129";for(let gy=802;gy<880;gy+=24){sx.beginPath();sx.moveTo(666,gy);sx.lineTo(826,gy);sx.stroke()}
+  sx.fillStyle=lastDecision==="SELL"?"#e57e70":"#b7e36b";sx.font='700 28px "Cascadia Mono",monospace';sx.fillText(lastDecision,678,850);
+  sx.fillStyle="#1a211c";sx.beginPath();sx.roundRect(650,926,210,45,6);sx.fill();sx.strokeStyle="#465248";sx.stroke();for(let k=0;k<8;k++){sx.fillStyle=k%3?"#59665c":"#b7e36b";sx.fillRect(665+k*22,940+(k%2)*7,13,4)}
+  drawSocialFly(917,880,now);
+  sx.fillStyle="#8f9b91";sx.font='500 15px "Cascadia Mono",monospace';sx.fillText("sinal → decisão → ordem simulada",650,1026);
+  sx.strokeStyle="#293129";sx.beginPath();sx.moveTo(60,1085);sx.lineTo(1020,1085);sx.stroke();
+  const metrics=[["RETORNO",fmtPct(m.ret)],["ALPHA",`${fmtPct(m.alpha)} p.p.`],["TRADES",String(trades.length)],["MAX DD",`${maxDD.toFixed(2)}%`]];
+  metrics.forEach(([label,value],i)=>{const mx=60+i*240;sx.fillStyle="#8f9b91";sx.font='500 15px "Cascadia Mono",monospace';sx.fillText(label,mx,1130);sx.fillStyle=i===1&&m.alpha<0?"#e57e70":"#eef4ef";sx.font='500 31px "Cascadia Mono",monospace';sx.fillText(value,mx,1175)});
+  sx.fillStyle="#8f9b91";sx.font='400 17px "Segoe UI Variable",sans-serif';sx.fillText("Sem dinheiro real. Código, dados e método abertos no GitHub.",60,1240);sx.fillStyle="#b7e36b";sx.font='600 17px "Cascadia Mono",monospace';sx.fillText("github.com/Matheussantos25/mosca-lab-connectome-game",60,1274);
+  sx.fillStyle="#293129";sx.fillRect(60,1312,960,5);sx.fillStyle="#b7e36b";sx.fillRect(60,1312,960*p,5);
+  if(p<.17){const fade=1-clamp((p-.11)/.06,0,1);sx.fillStyle=`rgba(9,11,10,${.95*fade})`;sx.fillRect(0,0,1080,1350);sx.globalAlpha=fade;sx.fillStyle="#b7e36b";sx.font='700 220px "Cascadia Mono",monospace';sx.fillText("668",55,540);sx.fillStyle="#eef4ef";sx.font='600 72px "Segoe UI Variable",sans-serif';sx.fillText("NEURÔNIOS REAIS",66,630);sx.fillStyle="#8f9b91";sx.font='400 34px "Segoe UI Variable",sans-serif';sx.fillText("podem tomar decisões diante do Bitcoin?",68,688);sx.globalAlpha=1}
+  if(p>.84){const fade=clamp((p-.84)/.08,0,1);sx.fillStyle=`rgba(9,11,10,${.96*fade})`;sx.fillRect(0,0,1080,1350);sx.globalAlpha=fade;sx.fillStyle="#b7e36b";sx.font='600 24px "Cascadia Mono",monospace';sx.fillText("RESULTADO / PAPER TRADING",66,310);sx.fillStyle="#eef4ef";sx.font='600 82px "Segoe UI Variable",sans-serif';sx.fillText(m.alpha>=0?"A MOSCA VENCEU":"O BENCHMARK VENCEU",62,420);sx.fillStyle=m.alpha>=0?"#b7e36b":"#e57e70";sx.font='600 150px "Cascadia Mono",monospace';sx.fillText(`${fmtPct(m.alpha)} p.p.`,56,610);sx.fillStyle="#8f9b91";sx.font='400 31px "Segoe UI Variable",sans-serif';sx.fillText(`${trades.length} trades · retorno ${fmtPct(m.ret)} · max DD ${maxDD.toFixed(2)}%`,66,680);sx.fillStyle="#eef4ef";sx.font='600 48px "Segoe UI Variable",sans-serif';sx.fillText("Você confiaria nessa rede?",64,860);sx.fillStyle="#b7e36b";sx.font='600 22px "Cascadia Mono",monospace';sx.fillText("VEJA O CÓDIGO + EXPERIMENTO NO GITHUB ↗",66,925);sx.fillStyle="#8f9b91";sx.font='400 21px "Segoe UI Variable",sans-serif';sx.fillText("Experimento de Data Science. Não é recomendação financeira.",66,1000);sx.globalAlpha=1}
+}
+function openVideoStudio(){
+  if(!brain||!candles.length){ui.copyStatus.textContent="Aguarde os dados carregarem";return}
+  socialPreviewStart=performance.now();drawSocialFrame(.38,0);ui.videoDialog.showModal();
+}
+function recorderMime(){
+  const options=["video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm"];return options.find(type=>MediaRecorder.isTypeSupported(type))||"";
+}
+async function recordSocialVideo(){
+  if(videoRecording)return;
+  if(!("MediaRecorder" in window)||!socialCanvas.captureStream){ui.videoStatus.textContent="Este navegador não oferece gravação de canvas. Use Chrome ou Edge.";return}
+  videoRecording=true;setRunning(false);mode="connectome";const radio=$('input[name="controllerMode"][value="connectome"]');if(radio)radio.checked=true;
+  reset(false);ui.overlay.classList.add("hidden");ui.recordVideo.disabled=true;ui.closeVideo.disabled=true;ui.videoDialog.classList.add("recording");
+  const duration=15000,stream=socialCanvas.captureStream(30),mime=recorderMime(),chunks=[];
+  let recorder;
+  try{recorder=new MediaRecorder(stream,{...(mime?{mimeType:mime}:{}),videoBitsPerSecond:9000000})}catch{videoRecording=false;ui.recordVideo.disabled=false;ui.closeVideo.disabled=false;ui.videoDialog.classList.remove("recording");ui.videoStatus.textContent="Não foi possível iniciar o gravador neste navegador.";return}
+  recorder.addEventListener("dataavailable",event=>{if(event.data.size)chunks.push(event.data)});
+  recorder.addEventListener("stop",()=>{
+    stream.getTracks().forEach(track=>track.stop());const blob=new Blob(chunks,{type:mime||"video/webm"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+    a.href=url;a.download=`mosca-quant-linkedin-${new Date().toISOString().slice(0,10)}.webm`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);
+    videoRecording=false;ui.recordVideo.disabled=false;ui.closeVideo.disabled=false;ui.videoDialog.classList.remove("recording");ui.videoStatus.textContent=`Vídeo salvo · ${(blob.size/1048576).toFixed(1).replace(".",",")} MB · pronto para publicar`;drawSocialFrame(1,performance.now());
+  });
+  const started=performance.now();recorder.start(500);
+  const captureFrame=now=>{
+    const p=clamp((now-started)/duration,0,1),target=Math.floor(clamp((p-.13)/.68,0,1)*180);
+    while(telemetry.length<target&&cursor<endIndex)advance();
+    drawSocialFrame(p,now);ui.videoStatus.textContent=`Gravando… ${Math.round(p*100)}% · mantenha esta janela aberta`;
+    if(p<1)requestAnimationFrame(captureFrame);else recorder.stop();
+  };
+  requestAnimationFrame(captureFrame);
+}
 ui.toggle.addEventListener("click",()=>setRunning(!running));ui.heroStart.addEventListener("click",()=>setRunning(true));ui.reset.addEventListener("click",()=>reset(true));
 ui.speed.addEventListener("input",e=>{speed=+e.target.value;ui.speedOut.textContent=`${speed.toFixed(1).replace(".0","").replace(".",",")}x`});
 document.querySelectorAll('input[name="controllerMode"]').forEach(input=>input.addEventListener("change",e=>{mode=e.target.value;reset(true)}));
 ui.export.addEventListener("click",exportCSV);ui.copy.addEventListener("click",copyResult);
+ui.video.addEventListener("click",openVideoStudio);ui.recordVideo.addEventListener("click",recordSocialVideo);ui.closeVideo.addEventListener("click",()=>{if(!videoRecording)ui.videoDialog.close()});
+ui.videoDialog.addEventListener("click",event=>{if(event.target===ui.videoDialog&&!videoRecording)ui.videoDialog.close()});ui.videoDialog.addEventListener("cancel",event=>{if(videoRecording)event.preventDefault()});
 $("#aboutButton").addEventListener("click",()=>ui.dialog.showModal());$("#closeHelp").addEventListener("click",()=>ui.dialog.close());$("#understoodButton").addEventListener("click",()=>ui.dialog.close());
 ui.dialog.addEventListener("click",e=>{if(e.target===ui.dialog)ui.dialog.close()});
 loadExperiment();render();requestAnimationFrame(frame);

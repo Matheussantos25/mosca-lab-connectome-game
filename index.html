@@ -44,7 +44,7 @@
     <div class="metric"><span>SHARPE</span><strong id="sharpeValue">0,00</strong><small>não anualizado</small></div>
     <div class="metric"><span>MAX DD</span><strong id="drawdownValue">0,00%</strong><small>queda do pico</small></div>
     <div class="metric"><span>TRADES</span><strong id="tradeValue">0</strong><small id="hitRateValue">0% positivos</small></div>
-    <div class="score-actions"><button class="secondary-button" id="exportButton" type="button">Exportar CSV</button><button class="text-button" id="copyPostButton" type="button">Copiar resultado ↗</button><span id="copyStatus" aria-live="polite"></span></div>
+    <div class="score-actions"><button class="video-button" id="videoButton" type="button"><span aria-hidden="true">●</span> Gerar vídeo 4:5</button><button class="secondary-button" id="exportButton" type="button">Exportar CSV</button><button class="text-button" id="copyPostButton" type="button">Copiar resultado ↗</button><span id="copyStatus" aria-live="polite"></span></div>
   </section>
   <section class="explain-section" aria-labelledby="explainTitle">
     <div class="explain-copy"><p class="eyebrow">A CAIXA-PRETA ESTÁ ABERTA</p><h2 id="explainTitle">Do candle ao trade, sem atalhos.</h2><p>O mercado vira seis sinais normalizados. Eles atravessam apenas conexões do recorte FlyWire. Um readout fixo transforma a atividade descendente em ação.</p></div>
@@ -66,6 +66,13 @@
   <p>A carteira começa com US$ 10 mil fictícios. O guard impede alavancagem e limita a exposição. O benchmark usa buy &amp; hold com o mesmo limite.</p>
   <p>O resultado é exploratório. Compare controladores, exporte o CSV e procure vieses, overfitting e sorte.</p>
   <button class="primary-button" id="understoodButton" type="button">Entendi o experimento</button>
+</dialog>
+<dialog id="videoDialog" class="video-dialog">
+  <div class="dialog-head"><span>SOCIAL CUT / 1080 × 1350</span><button id="closeVideo" type="button" aria-label="Fechar">×</button></div>
+  <div class="video-studio">
+    <canvas id="socialCanvas" width="1080" height="1350" aria-label="Prévia vertical do vídeo MOSCA.QUANT"></canvas>
+    <div class="video-copy"><p class="eyebrow">PRONTO PARA O FEED</p><h2>A mosca opera. Os dados contam a história.</h2><p>O navegador grava 15 segundos em WebM: conectoma real, candles, decisões e benchmark. Nenhum upload e nenhuma biblioteca externa.</p><div class="video-spec"><span>4:5</span><span>30 FPS</span><span>15 SEG</span><span>WEBM</span></div><button class="primary-button" id="recordVideoButton" type="button">Gravar e baixar vídeo</button><small id="videoStatus" aria-live="polite">Abra a prévia e grave quando estiver pronto.</small></div>
+  </div>
 </dialog>
 <script src="app.js"></script>
 </body></html>
