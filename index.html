@@ -21,7 +21,7 @@
   </section>
   <section class="terminal" id="terminal" aria-label="Terminal de paper trading">
     <article class="market-panel panel">
-      <header class="panel-head market-head"><div><span class="panel-code">01 / MARKET</span><h2>BTC—USD <b id="marketGranularity">1H REPLAY</b></h2></div><div class="quote"><span id="marketSource">COINBASE PUBLIC</span><strong id="priceValue">—</strong><small id="priceChange">aguardando candles</small></div></header>
+      <header class="panel-head market-head"><div><span class="panel-code">01 / MARKET</span><h2>BTC—USD <b id="marketGranularity">1H REPLAY</b></h2><p class="market-period" id="marketPeriod">Carregando período analisado</p></div><div class="quote"><span id="marketSource">COINBASE PUBLIC</span><strong id="priceValue">—</strong><small id="priceChange">aguardando candles</small></div></header>
       <div class="chart-wrap"><canvas id="gameCanvas" width="1100" height="620" aria-label="Gráfico de candles BTC-USD com decisões do conectoma"></canvas><div class="chart-grid-labels" aria-hidden="true"><span>PRICE</span><span>NEURAL SIGNAL</span><span>PORTFOLIO</span></div><div class="start-overlay" id="arenaMessage"><span class="overlay-index">EXPERIMENTO PRONTO</span><strong>O cérebro não vê números.</strong><p>Ele recebe seis sinais normalizados de retorno, momentum, volatilidade, volume e drawdown.</p><button class="primary-button" id="heroStartButton" type="button">Executar replay</button></div></div>
       <footer class="market-foot"><div><span>EXPOSIÇÃO</span><strong id="exposureValue">0%</strong></div><div><span>CAIXA</span><strong id="cashValue">$10.000</strong></div><div><span>POSIÇÃO</span><strong id="positionValue">0,0000 BTC</strong></div><div><span>CANDLE</span><strong id="timeValue">0 / 180</strong></div></footer>
     </article>
@@ -30,20 +30,21 @@
       <article class="control-panel panel">
         <header class="panel-head compact"><div><span class="panel-code">03 / PROTOCOL</span><h2>Controlador</h2></div><span class="memory-badge" id="memoryBadge">MEM 00</span></header>
         <fieldset class="mode-control"><legend>Estratégia em teste</legend><label><input type="radio" name="controllerMode" value="connectome" checked><span>Conectoma</span></label><label><input type="radio" name="controllerMode" value="momentum"><span>Momentum</span></label><label><input type="radio" name="controllerMode" value="random"><span>Aleatório</span></label></fieldset>
-        <div class="decision-card" aria-live="polite"><span>PROPOSTA ATUAL</span><strong id="decisionValue">HOLD</strong><small id="decisionReason">Aguardando o primeiro candle</small></div>
+        <div class="decision-card" aria-live="polite"><span>RECIBO DA DECISÃO</span><strong id="decisionValue">HOLD</strong><small id="decisionReason">Aguardando o primeiro candle</small><div class="decision-proof"><div><span>SCORE</span><b id="decisionScore">0,000</b></div><div><span>REGRA</span><b id="decisionRule">entre −0,055 e +0,055</b></div><div><span>EXECUÇÃO</span><b id="executionState">nenhuma ordem</b></div></div><p id="decisionSignals">Os sinais do candle aparecerão aqui.</p></div>
         <div class="control-row"><label for="speedControl">Velocidade</label><output id="speedOutput">1x</output><input id="speedControl" type="range" min="0.5" max="4" value="1" step="0.5"></div>
-        <label class="guard-row"><span><strong>Risk guard</strong><small>sem alavancagem · exposição máxima 70%</small></span><input id="learningToggle" type="checkbox" checked><i aria-hidden="true"></i></label>
+        <label class="guard-row"><span><strong>Limite de risco</strong><small>cada compra respeita o teto de 70% · sem alavancagem</small></span><input id="riskToggle" type="checkbox" checked><i aria-hidden="true"></i></label>
         <div class="actions"><button class="primary-button" id="toggleButton" type="button"><span id="toggleLabel">Executar</span></button><button class="secondary-button" id="resetButton" type="button">Reiniciar</button></div>
       </article>
     </aside>
   </section>
   <section class="scoreboard panel" aria-labelledby="scoreTitle">
-    <div class="score-intro"><span class="panel-code">04 / SCOREBOARD</span><h2 id="scoreTitle">A rede venceu o mercado?</h2><p id="verdictText">Execute os 180 candles para comparar com buy &amp; hold.</p></div>
-    <div class="metric"><span>EQUITY</span><strong id="equityValue">$10.000</strong><small>carteira simulada</small></div>
-    <div class="metric"><span>RETORNO</span><strong id="returnValue">0,00%</strong><small id="alphaValue">α 0,00 p.p.</small></div>
-    <div class="metric"><span>SHARPE</span><strong id="sharpeValue">0,00</strong><small>não anualizado</small></div>
-    <div class="metric"><span>MAX DD</span><strong id="drawdownValue">0,00%</strong><small>queda do pico</small></div>
-    <div class="metric"><span>TRADES</span><strong id="tradeValue">0</strong><small id="hitRateValue">0% positivos</small></div>
+    <div class="score-intro"><span class="panel-code">04 / LEITURA DA RODADA</span><h2 id="scoreTitle">Resultado em linguagem comum</h2><p class="absolute-verdict" id="absoluteVerdict">Execute o replay para medir ganho ou perda.</p><p id="verdictText">A comparação com o benchmark aparecerá separadamente.</p></div>
+    <div class="metric"><span>EQUITY <button class="help-tip" type="button" aria-label="O que é equity?" data-tooltip="Valor atual da carteira: caixa mais Bitcoin.">?</button></span><strong id="equityValue">$10.000</strong><small>valor da carteira</small></div>
+    <div class="metric"><span>RETORNO <button class="help-tip" type="button" aria-label="O que é retorno?" data-tooltip="Ganho ou perda da carteira desde os US$ 10 mil iniciais.">?</button></span><strong id="returnValue">0,00%</strong><small>resultado absoluto</small></div>
+    <div class="metric"><span>ALPHA <button class="help-tip" type="button" aria-label="O que é alpha?" data-tooltip="Diferença, em pontos percentuais, entre a mosca e o benchmark 70% Bitcoin + 30% caixa.">?</button></span><strong id="alphaValue">0,00 p.p.</strong><small id="benchmarkValue">benchmark 0,00%</small></div>
+    <div class="metric"><span>SHARPE <button class="help-tip" type="button" aria-label="O que é Sharpe?" data-tooltip="Retorno em relação à oscilação da carteira. Negativo indica retorno médio negativo.">?</button></span><strong id="sharpeValue">0,00</strong><small>ajustado ao risco</small></div>
+    <div class="metric"><span>MAX DD <button class="help-tip" type="button" aria-label="O que é drawdown?" data-tooltip="Maior queda da carteira depois de atingir um pico.">?</button></span><strong id="drawdownValue">0,00%</strong><small>pior queda do pico</small></div>
+    <div class="metric"><span>ORDENS <button class="help-tip" type="button" aria-label="O que são ordens?" data-tooltip="Compras e vendas realmente executadas; HOLD não conta.">?</button></span><strong id="tradeValue">0</strong><small id="hitRateValue">0% das vendas positivas</small></div>
     <div class="score-actions"><button class="video-button" id="videoButton" type="button"><span aria-hidden="true">●</span> Gerar vídeo 4:5</button><button class="secondary-button" id="exportButton" type="button">Exportar CSV</button><button class="text-button" id="copyPostButton" type="button">Copiar resultado ↗</button><span id="copyStatus" aria-live="polite"></span></div>
   </section>
   <section class="explain-section" aria-labelledby="explainTitle">
@@ -61,10 +62,11 @@
 </main>
 <dialog id="helpDialog">
   <div class="dialog-head"><span>PROTOCOLO / v2.0</span><button id="closeHelp" type="button" aria-label="Fechar">×</button></div>
-  <h2>Uma mosca não entende Bitcoin.</h2>
-  <p>O experimento converte cada candle em seis sinais normalizados. O circuito LIF os propaga e um readout fixo gera BUY, HOLD ou SELL.</p>
-  <p>A carteira começa com US$ 10 mil fictícios. O guard impede alavancagem e limita a exposição. O benchmark usa buy &amp; hold com o mesmo limite.</p>
-  <p>O resultado é exploratório. Compare controladores, exporte o CSV e procure vieses, overfitting e sorte.</p>
+  <h2>Como ler esta rodada</h2>
+  <p>Cada replay usa os 180 candles horários mais recentes disponíveis. Seis sinais entram no circuito LIF e um score acima de +0,055 compra, abaixo de −0,055 vende e dentro dessa faixa mantém a posição.</p>
+  <p>A carteira começa com US$ 10 mil simulados. Com o limite de risco ligado, no máximo 70% do patrimônio pode ficar exposto ao Bitcoin.</p>
+  <p>Retorno mostra ganho ou perda real da carteira. Alpha compara esse retorno com o benchmark de 70% em Bitcoin e 30% em caixa. Max DD registra a pior queda depois de um pico.</p>
+  <p>Conectividade e anatomia vêm do FlyWire. Estímulos, dinâmica, decoder e carteira são modelos computacionais exploratórios.</p>
   <button class="primary-button" id="understoodButton" type="button">Entendi o experimento</button>
 </dialog>
 <dialog id="videoDialog" class="video-dialog">

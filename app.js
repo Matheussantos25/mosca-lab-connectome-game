@@ -2,9 +2,12 @@
 const $=s=>document.querySelector(s),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const chart=$("#gameCanvas"),cx=chart.getContext("2d"),brainCanvas=$("#brainCanvas"),bx=brainCanvas.getContext("2d");
 const socialCanvas=$("#socialCanvas"),sx=socialCanvas.getContext("2d");
-const ui={toggle:$("#toggleButton"),toggleLabel:$("#toggleLabel"),heroStart:$("#heroStartButton"),reset:$("#resetButton"),speed:$("#speedControl"),speedOut:$("#speedOutput"),guard:$("#learningToggle"),overlay:$("#arenaMessage"),status:$("#sessionStatus"),light:$("#statusLight"),price:$("#priceValue"),change:$("#priceChange"),source:$("#marketSource"),time:$("#timeValue"),exposure:$("#exposureValue"),cash:$("#cashValue"),position:$("#positionValue"),decision:$("#decisionValue"),reason:$("#decisionReason"),rate:$("#spikeRate"),datasetStats:$("#datasetStats"),memory:$("#memoryBadge"),equity:$("#equityValue"),return:$("#returnValue"),alpha:$("#alphaValue"),sharpe:$("#sharpeValue"),drawdown:$("#drawdownValue"),trades:$("#tradeValue"),hitRate:$("#hitRateValue"),verdict:$("#verdictText"),features:$("#featureTape"),export:$("#exportButton"),copy:$("#copyPostButton"),copyStatus:$("#copyStatus"),dialog:$("#helpDialog"),video:$("#videoButton"),videoDialog:$("#videoDialog"),recordVideo:$("#recordVideoButton"),videoStatus:$("#videoStatus"),closeVideo:$("#closeVideo")};
+const ui={toggle:$("#toggleButton"),toggleLabel:$("#toggleLabel"),heroStart:$("#heroStartButton"),reset:$("#resetButton"),speed:$("#speedControl"),speedOut:$("#speedOutput"),guard:$("#riskToggle"),overlay:$("#arenaMessage"),status:$("#sessionStatus"),light:$("#statusLight"),price:$("#priceValue"),change:$("#priceChange"),source:$("#marketSource"),period:$("#marketPeriod"),time:$("#timeValue"),exposure:$("#exposureValue"),cash:$("#cashValue"),position:$("#positionValue"),decision:$("#decisionValue"),reason:$("#decisionReason"),decisionScore:$("#decisionScore"),decisionRule:$("#decisionRule"),execution:$("#executionState"),decisionSignals:$("#decisionSignals"),rate:$("#spikeRate"),datasetStats:$("#datasetStats"),memory:$("#memoryBadge"),equity:$("#equityValue"),return:$("#returnValue"),alpha:$("#alphaValue"),benchmark:$("#benchmarkValue"),absoluteVerdict:$("#absoluteVerdict"),sharpe:$("#sharpeValue"),drawdown:$("#drawdownValue"),trades:$("#tradeValue"),hitRate:$("#hitRateValue"),verdict:$("#verdictText"),features:$("#featureTape"),export:$("#exportButton"),copy:$("#copyPostButton"),copyStatus:$("#copyStatus"),dialog:$("#helpDialog"),video:$("#videoButton"),videoDialog:$("#videoDialog"),recordVideo:$("#recordVideoButton"),videoStatus:$("#videoStatus"),closeVideo:$("#closeVideo")};
 const fmtUSD=v=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"USD",maximumFractionDigits:v>1000?0:2}).format(v);
 const fmtPct=v=>`${v>=0?"+":""}${v.toFixed(2).replace(".",",")}%`;
+const fmtPP=v=>`${v>=0?"+":""}${v.toFixed(2).replace(".",",")} p.p.`;
+const fmtPPMagnitude=v=>`${Math.abs(v).toFixed(2).replace(".",",")} p.p.`;
+const fmtPeriod=time=>new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}).format(new Date(time*1000)).replace(".","");
 let recentSpikes=0,displayedRate=0;
 
 class ConnectomeNetwork{
@@ -28,7 +31,7 @@ class ConnectomeNetwork{
     for(let i=0;i<this.count;i++){this.potential[i]=this.potential[i]*.9+this.current[i]+(Math.random()*.025-.008);if(this.potential[i]>=1){this.spiked[i]=1;this.potential[i]=0}this.activity[i]=Math.max(this.spiked[i],this.activity[i]*.86);if(this.spiked[i])recentSpikes++}
     return[this.mean("dna02","left"),this.mean("dnp09"),this.mean("dna01","right"),this.mean("gf"),this.mean("mdn")];
   }
-  reward(amount){if(!ui.guard.checked)return;for(let i=0;i<this.edges.length;i++){const e=this.edges[i];if(this.activity[e[0]]>.35&&this.activity[e[1]]>.2)this.plastic[i]=clamp(this.plastic[i]+amount,.82,1.18)}}
+  reward(amount){for(let i=0;i<this.edges.length;i++){const e=this.edges[i];if(this.activity[e[0]]>.35&&this.activity[e[1]]>.2)this.plastic[i]=clamp(this.plastic[i]+amount,.82,1.18)}}
   reset(){this.potential.fill(0);this.spiked.fill(0);this.activity.fill(0)}
   restoreMemory(){try{const m=JSON.parse(localStorage.getItem("mosca-quant-memory"));if(m?.weights?.length===this.plastic.length)this.plastic.set(m.weights);ui.memory.textContent=`MEM ${String(m?.runs||0).padStart(2,"0")}`}catch{}}
   saveMemory(){try{const old=JSON.parse(localStorage.getItem("mosca-quant-memory"))||{};const runs=(old.runs||0)+1;localStorage.setItem("mosca-quant-memory",JSON.stringify({runs,weights:Array.from(this.plastic,v=>+v.toFixed(4))}));ui.memory.textContent=`MEM ${String(runs).padStart(2,"0")}`}catch{}}
@@ -37,7 +40,7 @@ class ConnectomeNetwork{
 let brain=null,positions=[],brainBackdrop=null,candles=[],dataSource="COINBASE PUBLIC";
 let running=false,speed=1,mode="connectome",cursor=30,endIndex=0,lastStep=0,lastRate=0;
 let cash=10000,qty=0,avgCost=0,peak=10000,maxDD=0,initialPrice=0,lastEquity=10000,tradeCooldown=0;
-let trades=[],telemetry=[],equityCurve=[],benchmarkCurve=[],returns=[],lastDecision="HOLD",lastFeatures={};
+let trades=[],telemetry=[],equityCurve=[],benchmarkCurve=[],returns=[],lastDecision="HOLD",lastFeatures={},lastExecution={executed:false,reason:"nenhuma ordem"};
 let socialPreviewStart=performance.now(),videoRecording=false;
 
 function fallbackCandles(){
@@ -52,9 +55,9 @@ async function loadExperiment(){
     const r=await fetch("https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=3600",{headers:{Accept:"application/json"}});
     if(!r.ok)throw new Error();const raw=await r.json();
     candles=raw.map(x=>({time:+x[0],low:+x[1],high:+x[2],open:+x[3],close:+x[4],volume:+x[5]})).sort((a,b)=>a.time-b.time).slice(-230);
-    if(candles.length<210)throw new Error();
+    if(candles.length<205)throw new Error();
   }catch{candles=fallbackCandles();dataSource="FALLBACK REPRODUZÍVEL";ui.source.textContent=dataSource}
-  endIndex=Math.min(candles.length,210);cursor=endIndex-180;reset(true);ui.toggle.disabled=false;ui.status.textContent="Experimento pronto";render();
+  endIndex=candles.length;cursor=endIndex-180;ui.period.textContent=`${fmtPeriod(candles[cursor].time)} → ${fmtPeriod(candles[endIndex-1].time)} · 180 horas`;reset(true);ui.toggle.disabled=false;ui.status.textContent="Experimento pronto";render();
 }
 function stats(values){const mean=values.reduce((a,b)=>a+b,0)/(values.length||1),sd=Math.sqrt(values.reduce((a,b)=>a+(b-mean)**2,0)/(values.length||1));return{mean,sd}}
 function getFeatures(i){
@@ -67,22 +70,32 @@ function getFeatures(i){
 function neuralDecision(f){
   let sum=[0,0,0,0,0];for(let n=0;n<14;n++){const m=brain.step(f.sensors);m.forEach((v,i)=>sum[i]+=v)}
   const score=(sum[1]*.42+sum[2])-(sum[0]+sum[3]*.7+sum[4]*.8),confidence=Math.abs(score)/14;
-  if(score>.055)return{action:"BUY",reason:`saída compradora ${confidence.toFixed(3)}`};
-  if(score<-.055)return{action:"SELL",reason:`saída defensiva ${confidence.toFixed(3)}`};
-  return{action:"HOLD",reason:`sinal abaixo do limiar ${confidence.toFixed(3)}`};
+  if(score>.055)return{action:"BUY",score,confidence,rule:"acima de +0,055",reason:"atividade compradora superou a defensiva"};
+  if(score<-.055)return{action:"SELL",score,confidence,rule:"abaixo de −0,055",reason:"atividade defensiva superou a compradora"};
+  return{action:"HOLD",score,confidence,rule:"entre −0,055 e +0,055",reason:"o sinal ficou dentro da faixa neutra"};
 }
 function chooseDecision(f){
   if(mode==="connectome")return neuralDecision(f);
   for(let n=0;n<6;n++)brain.step(f.sensors);
-  if(mode==="momentum"){if(f.m6>.006)return{action:"BUY",reason:"momentum 6h positivo"};if(f.m6<-.006)return{action:"SELL",reason:"momentum 6h negativo"};return{action:"HOLD",reason:"momentum dentro da banda"}}
-  const r=Math.random();return{action:r<.26?"BUY":r>.74?"SELL":"HOLD",reason:"controle estocástico"};
+  if(mode==="momentum"){if(f.m6>.006)return{action:"BUY",score:f.m6,rule:"momentum acima de +0,6%",reason:"o preço ganhou força em seis horas"};if(f.m6<-.006)return{action:"SELL",score:f.m6,rule:"momentum abaixo de −0,6%",reason:"o preço perdeu força em seis horas"};return{action:"HOLD",score:f.m6,rule:"entre −0,6% e +0,6%",reason:"o momentum ficou dentro da faixa neutra"}}
+  const r=Math.random(),action=r<.26?"BUY":r>.74?"SELL":"HOLD";return{action,score:r-.5,rule:"sorteio de controle",reason:"decisão sorteada para servir de comparação"};
 }
 function execute(action,price,index){
-  if(tradeCooldown>0){tradeCooldown--;return null}
-  const equity=cash+qty*price,exposure=qty*price/equity;let value=0,pnl=null;
-  if(action==="BUY"&&exposure<.68){value=Math.min(equity*.22,cash);if(value>25){const fee=value*.0015,bought=(value-fee)/price;qty+=bought;cash-=value;avgCost=qty?((avgCost*(qty-bought))+price*bought)/qty:price}}
-  if(action==="SELL"&&qty>0){const sold=qty*.42;value=sold*price;const fee=value*.0015;pnl=(price-avgCost)*sold-fee;qty-=sold;cash+=value-fee;if(qty<1e-8){qty=0;avgCost=0}}
-  if(value){const t={index,action,price,value,pnl};trades.push(t);tradeCooldown=2;return t}return null;
+  if(tradeCooldown>0){lastExecution={executed:false,reason:`aguardando ${tradeCooldown} candle(s) após a última ordem`};tradeCooldown--;return null}
+  if(action==="HOLD"){lastExecution={executed:false,reason:"HOLD mantém a carteira como está"};return null}
+  const equity=cash+qty*price,currentPosition=qty*price,cap=ui.guard.checked ? .70 : 1,room=Math.max(0,cap*equity-currentPosition);let value=0,pnl=null;
+  if(action==="BUY"){
+    value=Math.min(equity*.22,cash,room);
+    if(value<=25){lastExecution={executed:false,reason:ui.guard.checked?"compra bloqueada pelo limite de 70%":"compra bloqueada por falta de caixa"};return null}
+    const fee=value*.0015,bought=(value-fee)/price;qty+=bought;cash-=value;avgCost=qty?((avgCost*(qty-bought))+price*bought)/qty:price;
+    lastExecution={executed:true,reason:`comprou ${bought.toFixed(4).replace(".",",")} BTC por ${fmtUSD(value)}`};
+  }
+  if(action==="SELL"){
+    if(qty<=0){lastExecution={executed:false,reason:"venda bloqueada porque a carteira não possui Bitcoin"};return null}
+    const sold=qty*.42;value=sold*price;const fee=value*.0015;pnl=(price-avgCost)*sold-fee;qty-=sold;cash+=value-fee;if(qty<1e-8){qty=0;avgCost=0}
+    lastExecution={executed:true,reason:`vendeu ${sold.toFixed(4).replace(".",",")} BTC por ${fmtUSD(value)}`};
+  }
+  if(value){const t={index,action,price,value,pnl};trades.push(t);tradeCooldown=2;return t}lastExecution={executed:false,reason:"nenhuma ordem executada"};return null;
 }
 function calculateMetrics(price){
   const equity=cash+qty*price,ret=(equity/10000-1)*100,bench=3000+(7000/initialPrice)*price,benchRet=(bench/10000-1)*100;
@@ -99,24 +112,26 @@ function advance(){
   const trade=execute(d.action,c.close,cursor),m=calculateMetrics(c.close);lastEquity=m.equity;
   if(cursor>endIndex-179)brain.reward(m.equity>previous ? .003 : -.003);
   lastDecision=d.action;lastFeatures=f;
-  telemetry.push({timestamp:new Date(c.time*1000).toISOString(),fonte:dataSource,estrategia:mode,open:c.open,high:c.high,low:c.low,close:c.close,volume:c.volume,retorno_1h:f.r1,momentum_6h:f.m6,volatilidade_12h:f.vol,drawdown_24h:f.dd,decisao:d.action,executada:Boolean(trade),cash,equity:m.equity,retorno_pct:m.ret,benchmark_pct:m.benchRet,alpha_pp:m.alpha,spikes_hz:displayedRate});
+  telemetry.push({timestamp:new Date(c.time*1000).toISOString(),fonte:dataSource,estrategia:mode,open:c.open,high:c.high,low:c.low,close:c.close,volume:c.volume,retorno_1h:f.r1,momentum_6h:f.m6,volatilidade_12h:f.vol,drawdown_24h:f.dd,decisao:d.action,score:d.score,regra:d.rule,executada:Boolean(trade),motivo_execucao:lastExecution.reason,cash,equity:m.equity,retorno_pct:m.ret,benchmark_pct:m.benchRet,alpha_pp:m.alpha,spikes_hz:displayedRate});
   cursor++;updateUI(c,f,d,m);render();if(cursor>=endIndex)finish();
 }
 function updateUI(c,f,d,m){
-  const prev=candles[Math.max(0,cursor-1)],change=(c.close/prev.close-1)*100,exposure=m.equity?qty*c.close/m.equity*100:0;
+  const prev=candles[Math.max(0,cursor-2)],change=(c.close/prev.close-1)*100,exposure=m.equity?qty*c.close/m.equity*100:0,delta=m.equity-10000;
   ui.price.textContent=fmtUSD(c.close);ui.change.textContent=`${fmtPct(change)} neste candle`;ui.change.className=change>=0?"positive":"negative";
-  ui.time.textContent=`${Math.min(180,cursor-(endIndex-180)+1)} / 180`;ui.exposure.textContent=`${exposure.toFixed(1).replace(".",",")}%`;ui.cash.textContent=fmtUSD(cash);ui.position.textContent=`${qty.toFixed(4).replace(".",",")} BTC`;
-  ui.decision.textContent=d.action;ui.decision.className=d.action.toLowerCase();ui.reason.textContent=d.reason;
-  ui.equity.textContent=fmtUSD(m.equity);ui.return.textContent=fmtPct(m.ret);ui.return.className=m.ret>=0?"positive":"negative";ui.alpha.textContent=`α ${fmtPct(m.alpha)} p.p.`;ui.sharpe.textContent=m.sharpe.toFixed(2).replace(".",",");ui.drawdown.textContent=`${maxDD.toFixed(2).replace(".",",")}%`;ui.trades.textContent=trades.length;ui.hitRate.textContent=`${Math.round(m.hit)}% positivos`;
-  ui.verdict.textContent=m.alpha>=0?`À frente do buy & hold por ${m.alpha.toFixed(2).replace(".",",")} p.p.`:`Atrás do buy & hold por ${Math.abs(m.alpha).toFixed(2).replace(".",",")} p.p.`;
+  ui.time.textContent=`${Math.min(180,cursor-(endIndex-180))} / 180`;ui.exposure.textContent=`${exposure.toFixed(1).replace(".",",")}%`;ui.cash.textContent=fmtUSD(cash);ui.position.textContent=`${qty.toFixed(4).replace(".",",")} BTC`;
+  ui.decision.textContent=d.action;ui.decision.className=d.action.toLowerCase();ui.reason.textContent=d.reason;ui.decisionScore.textContent=`${d.score>=0?"+":""}${d.score.toFixed(3).replace(".",",")}`;ui.decisionRule.textContent=d.rule;ui.execution.textContent=lastExecution.reason;
+  ui.decisionSignals.textContent=`Retorno 1h ${fmtPct(f.r1*100)} · momentum 6h ${fmtPct(f.m6*100)} · volatilidade ${(f.vol*100).toFixed(2).replace(".",",")}% · queda do pico ${fmtPct(f.dd*100)}`;
+  ui.equity.textContent=fmtUSD(m.equity);ui.return.textContent=fmtPct(m.ret);ui.return.className=m.ret>=0?"positive":"negative";ui.alpha.textContent=fmtPP(m.alpha);ui.alpha.className=m.alpha>=0?"positive":"negative";ui.benchmark.textContent=`benchmark ${fmtPct(m.benchRet)}`;ui.sharpe.textContent=m.sharpe.toFixed(2).replace(".",",");ui.drawdown.textContent=`${maxDD.toFixed(2).replace(".",",")}%`;ui.trades.textContent=trades.length;ui.hitRate.textContent=`${Math.round(m.hit)}% das vendas positivas`;
+  ui.absoluteVerdict.textContent=delta>=0?`A carteira ganhou ${fmtUSD(delta)} e terminou em ${fmtUSD(m.equity)}.`:`A carteira perdeu ${fmtUSD(Math.abs(delta))} e terminou em ${fmtUSD(m.equity)}.`;
+  ui.verdict.textContent=m.alpha>=0?`O benchmark retornou ${fmtPct(m.benchRet)}. A carteira ficou ${fmtPPMagnitude(m.alpha)} à frente.`:`O benchmark retornou ${fmtPct(m.benchRet)}. A carteira ficou ${fmtPPMagnitude(m.alpha)} atrás.`;
   const vals=[`RET ${f.r1>=0?"+":""}${f.r1.toFixed(3)}`,`MOM ${f.m6>=0?"+":""}${f.m6.toFixed(3)}`,`VOL ${f.vol.toFixed(3)}`,`VOLUME ${f.vz.toFixed(2)}σ`,`DD ${f.dd.toFixed(3)}`,`RANGE ${f.range.toFixed(3)}`];[...ui.features.children].forEach((el,i)=>el.textContent=vals[i]);
 }
 function reset(show=true){
-  running=false;const start=endIndex-180;cursor=start;cash=10000;qty=0;avgCost=0;peak=10000;maxDD=0;initialPrice=candles[start]?.close||1;lastEquity=10000;tradeCooldown=0;trades=[];telemetry=[];equityCurve=[];benchmarkCurve=[];returns=[];lastDecision="HOLD";if(brain)brain.reset();
-  ui.toggleLabel.textContent="Executar";ui.status.textContent="Experimento pronto";ui.light.classList.remove("live");ui.price.textContent=candles[start]?fmtUSD(candles[start].close):"—";ui.change.textContent="aguardando replay";ui.time.textContent="0 / 180";ui.exposure.textContent="0%";ui.cash.textContent=fmtUSD(10000);ui.position.textContent="0,0000 BTC";ui.decision.textContent="HOLD";ui.reason.textContent="Aguardando o primeiro candle";ui.equity.textContent=fmtUSD(10000);ui.return.textContent="0,00%";ui.alpha.textContent="α 0,00 p.p.";ui.sharpe.textContent="0,00";ui.drawdown.textContent="0,00%";ui.trades.textContent="0";ui.hitRate.textContent="0% positivos";ui.verdict.textContent="Execute os 180 candles para comparar com buy & hold.";ui.overlay.classList.toggle("hidden",!show);render();
+  running=false;const start=endIndex-180;cursor=start;cash=10000;qty=0;avgCost=0;peak=10000;maxDD=0;initialPrice=candles[start]?.close||1;lastEquity=10000;tradeCooldown=0;trades=[];telemetry=[];equityCurve=[];benchmarkCurve=[];returns=[];lastDecision="HOLD";lastExecution={executed:false,reason:"nenhuma ordem"};if(brain)brain.reset();
+  ui.toggleLabel.textContent="Executar";ui.status.textContent="Experimento pronto";ui.light.classList.remove("live");ui.price.textContent=candles[start]?fmtUSD(candles[start].close):"—";ui.change.textContent="aguardando replay";ui.time.textContent="0 / 180";ui.exposure.textContent="0%";ui.cash.textContent=fmtUSD(10000);ui.position.textContent="0,0000 BTC";ui.decision.textContent="HOLD";ui.decision.className="hold";ui.reason.textContent="Aguardando o primeiro candle";ui.decisionScore.textContent="0,000";ui.decisionRule.textContent="entre −0,055 e +0,055";ui.execution.textContent="nenhuma ordem";ui.decisionSignals.textContent="Os sinais do candle aparecerão aqui.";ui.equity.textContent=fmtUSD(10000);ui.return.textContent="0,00%";ui.alpha.textContent="0,00 p.p.";ui.alpha.className="";ui.benchmark.textContent="benchmark 0,00%";ui.sharpe.textContent="0,00";ui.drawdown.textContent="0,00%";ui.trades.textContent="0";ui.hitRate.textContent="0% das vendas positivas";ui.absoluteVerdict.textContent="Execute o replay para medir ganho ou perda.";ui.verdict.textContent="A comparação com o benchmark aparecerá separadamente.";ui.overlay.classList.toggle("hidden",!show);render();
 }
 function setRunning(next){if(!brain||!candles.length)return;running=next;ui.toggleLabel.textContent=running?"Pausar":"Executar";ui.status.textContent=running?`${mode==="connectome"?"Conectoma":mode} processando candles`:"Replay pausado";ui.light.classList.toggle("live",running);if(running)ui.overlay.classList.add("hidden")}
-function finish(){if(!running&&cursor<endIndex)return;running=false;ui.toggleLabel.textContent="Executar";ui.light.classList.remove("live");ui.status.textContent="Replay concluído";const alpha=equityCurve.length?(equityCurve.at(-1)-benchmarkCurve.at(-1))/100:0;ui.verdict.textContent=alpha>=0?`Conectoma venceu o benchmark por ${alpha.toFixed(2).replace(".",",")} p.p.`:`Benchmark venceu por ${Math.abs(alpha).toFixed(2).replace(".",",")} p.p.`;if(mode==="connectome"&&brain)brain.saveMemory()}
+function finish(){if(!running&&cursor<endIndex)return;running=false;ui.toggleLabel.textContent="Executar";ui.light.classList.remove("live");ui.status.textContent="Replay concluído";if(mode==="connectome"&&brain)brain.saveMemory()}
 
 function drawMarket(){
   cx.clearRect(0,0,chart.width,chart.height);cx.fillStyle="#0b0e0c";cx.fillRect(0,0,chart.width,chart.height);
@@ -155,7 +170,7 @@ function exportCSV(){
 }
 async function copyResult(){
   const m=equityCurve.length?calculateSnapshot():{ret:0,alpha:0,sharpe:0};
-  const text=`Coloquei 668 neurônios reais de uma mosca diante do Bitcoin.\n\nO MOSCA.QUANT transforma candles públicos de BTC-USD em seis sinais sensoriais, propaga esses sinais por 18.968 conexões do FlyWire e converte a atividade neural em BUY, HOLD ou SELL — tudo em paper trading auditável.\n\nResultado (${mode}):\n• retorno: ${fmtPct(m.ret)}\n• alpha vs. buy & hold: ${fmtPct(m.alpha)} p.p.\n• Sharpe: ${m.sharpe.toFixed(2)}\n• max drawdown: ${maxDD.toFixed(2)}%\n• ${trades.length} trades\n\nNão é estratégia financeira nem evidência de aprendizagem lucrativa. É um experimento de Data Science sobre redes, séries temporais, benchmarking e explicabilidade.\n\nhttps://github.com/Matheussantos25/mosca-lab-connectome-game\n\n#DataScience #DataAnalytics #Neuroscience #Bitcoin #OpenScience`;
+  const text=`Coloquei 668 neurônios reais de uma mosca diante do Bitcoin.\n\nO MOSCA.QUANT recebe candles públicos de BTC-USD, calcula seis sinais de mercado e propaga essa informação por 18.968 conexões do FlyWire. A atividade resultante gera decisões de compra, venda ou espera em uma carteira simulada.\n\nNesta rodada, a carteira retornou ${fmtPct(m.ret)}. O benchmark retornou ${fmtPct(m.ret-m.alpha)}, uma diferença de ${fmtPP(m.alpha)}. Foram ${trades.length} ordens e o maior drawdown chegou a ${maxDD.toFixed(2).replace(".",",")}%.\n\nO projeto reúne análise de redes, séries temporais, benchmarking, risco e visualização de dados em uma experiência que roda no navegador.\n\nCódigo e metodologia: https://github.com/Matheussantos25/mosca-lab-connectome-game\n\n#DataScience #DataAnalytics #Neuroscience #Bitcoin #OpenScience`;
   try{await navigator.clipboard.writeText(text);ui.copyStatus.textContent="Resultado copiado"}catch{ui.copyStatus.textContent="Não foi possível copiar"}
 }
 function calculateSnapshot(){
@@ -214,12 +229,12 @@ function drawSocialFrame(progress=.38,now=performance.now()){
   drawSocialFly(917,880,now);
   sx.fillStyle="#8f9b91";sx.font='500 15px "Cascadia Mono",monospace';sx.fillText("sinal → decisão → ordem simulada",650,1026);
   sx.strokeStyle="#293129";sx.beginPath();sx.moveTo(60,1085);sx.lineTo(1020,1085);sx.stroke();
-  const metrics=[["RETORNO",fmtPct(m.ret)],["ALPHA",`${fmtPct(m.alpha)} p.p.`],["TRADES",String(trades.length)],["MAX DD",`${maxDD.toFixed(2)}%`]];
+  const metrics=[["RETORNO",fmtPct(m.ret)],["ALPHA",fmtPP(m.alpha)],["ORDENS",String(trades.length)],["MAX DD",`${maxDD.toFixed(2)}%`]];
   metrics.forEach(([label,value],i)=>{const mx=60+i*240;sx.fillStyle="#8f9b91";sx.font='500 15px "Cascadia Mono",monospace';sx.fillText(label,mx,1130);sx.fillStyle=i===1&&m.alpha<0?"#e57e70":"#eef4ef";sx.font='500 31px "Cascadia Mono",monospace';sx.fillText(value,mx,1175)});
   sx.fillStyle="#8f9b91";sx.font='400 17px "Segoe UI Variable",sans-serif';sx.fillText("Sem dinheiro real. Código, dados e método abertos no GitHub.",60,1240);sx.fillStyle="#b7e36b";sx.font='600 17px "Cascadia Mono",monospace';sx.fillText("github.com/Matheussantos25/mosca-lab-connectome-game",60,1274);
   sx.fillStyle="#293129";sx.fillRect(60,1312,960,5);sx.fillStyle="#b7e36b";sx.fillRect(60,1312,960*p,5);
   if(p<.17){const fade=1-clamp((p-.11)/.06,0,1);sx.fillStyle=`rgba(9,11,10,${.95*fade})`;sx.fillRect(0,0,1080,1350);sx.globalAlpha=fade;sx.fillStyle="#b7e36b";sx.font='700 220px "Cascadia Mono",monospace';sx.fillText("668",55,540);sx.fillStyle="#eef4ef";sx.font='600 72px "Segoe UI Variable",sans-serif';sx.fillText("NEURÔNIOS REAIS",66,630);sx.fillStyle="#8f9b91";sx.font='400 34px "Segoe UI Variable",sans-serif';sx.fillText("podem tomar decisões diante do Bitcoin?",68,688);sx.globalAlpha=1}
-  if(p>.84){const fade=clamp((p-.84)/.08,0,1);sx.fillStyle=`rgba(9,11,10,${.96*fade})`;sx.fillRect(0,0,1080,1350);sx.globalAlpha=fade;sx.fillStyle="#b7e36b";sx.font='600 24px "Cascadia Mono",monospace';sx.fillText("RESULTADO / PAPER TRADING",66,310);sx.fillStyle="#eef4ef";sx.font='600 82px "Segoe UI Variable",sans-serif';sx.fillText(m.alpha>=0?"A MOSCA VENCEU":"O BENCHMARK VENCEU",62,420);sx.fillStyle=m.alpha>=0?"#b7e36b":"#e57e70";sx.font='600 150px "Cascadia Mono",monospace';sx.fillText(`${fmtPct(m.alpha)} p.p.`,56,610);sx.fillStyle="#8f9b91";sx.font='400 31px "Segoe UI Variable",sans-serif';sx.fillText(`${trades.length} trades · retorno ${fmtPct(m.ret)} · max DD ${maxDD.toFixed(2)}%`,66,680);sx.fillStyle="#eef4ef";sx.font='600 48px "Segoe UI Variable",sans-serif';sx.fillText("Você confiaria nessa rede?",64,860);sx.fillStyle="#b7e36b";sx.font='600 22px "Cascadia Mono",monospace';sx.fillText("VEJA O CÓDIGO + EXPERIMENTO NO GITHUB ↗",66,925);sx.fillStyle="#8f9b91";sx.font='400 21px "Segoe UI Variable",sans-serif';sx.fillText("Experimento de Data Science. Não é recomendação financeira.",66,1000);sx.globalAlpha=1}
+  if(p>.84){const fade=clamp((p-.84)/.08,0,1);sx.fillStyle=`rgba(9,11,10,${.96*fade})`;sx.fillRect(0,0,1080,1350);sx.globalAlpha=fade;sx.fillStyle="#b7e36b";sx.font='600 24px "Cascadia Mono",monospace';sx.fillText("RESULTADO / PAPER TRADING",66,310);sx.fillStyle="#eef4ef";sx.font='600 82px "Segoe UI Variable",sans-serif';sx.fillText(m.ret>=0?"CARTEIRA COM LUCRO":"CARTEIRA COM PREJUÍZO",62,420);sx.fillStyle=m.ret>=0?"#b7e36b":"#e57e70";sx.font='600 150px "Cascadia Mono",monospace';sx.fillText(fmtPct(m.ret),56,610);sx.fillStyle="#8f9b91";sx.font='400 31px "Segoe UI Variable",sans-serif';sx.fillText(`benchmark ${fmtPct(m.ret-m.alpha)} · diferença ${fmtPP(m.alpha)}`,66,680);sx.fillStyle="#eef4ef";sx.font='600 48px "Segoe UI Variable",sans-serif';sx.fillText(`${trades.length} ordens · max DD ${maxDD.toFixed(2)}%`,64,860);sx.fillStyle="#b7e36b";sx.font='600 22px "Cascadia Mono",monospace';sx.fillText("VEJA O CÓDIGO + EXPERIMENTO NO GITHUB ↗",66,925);sx.fillStyle="#8f9b91";sx.font='400 21px "Segoe UI Variable",sans-serif';sx.fillText("Carteira simulada para um experimento de Data Science.",66,1000);sx.globalAlpha=1}
 }
 function openVideoStudio(){
   if(!brain||!candles.length){ui.copyStatus.textContent="Aguarde os dados carregarem";return}
